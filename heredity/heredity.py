@@ -1,5 +1,6 @@
 import csv
 import itertools
+from os.path import join
 import sys
 
 PROBS = {
@@ -108,24 +109,71 @@ def powerset(s):
 def joint_probability(people, one_gene, two_genes, have_trait):
     """
     Compute and return a joint probability.
-
-    The probability returned should be the probability that
-        * everyone in set `one_gene` has one copy of the gene, and
-        * everyone in set `two_genes` has two copies of the gene, and
-        * everyone not in `one_gene` or `two_gene` does not have the gene, and
-        * everyone in set `have_trait` has the trait, and
-        * everyone not in set` have_trait` does not have the trait.
     """
     joint_probability = 1
-    for p in one_gene:
+    for p in people:
         father = people[p]["father"]
         mother = people[p]["mother"]
 
-        if not father and not mother:
-            probability = PROBS["gene"][1]
-            joint_probability *= probability
+        if father is None and mother is None:
+            # Ur-Ahnen: Werte direkt ablesen
+            if p in two_genes:
+                gene_prob = PROBS["gene"][2]
+            elif p in one_gene:
+                gene_prob = PROBS["gene"][1]
+            else:
+                gene_prob = PROBS["gene"][0]
         else:
-            probability = one_gene(father) * one_gene(mother) * PROBS["mutation"]
+            # Wahrscheinlichkeit, dass Vater/Mutter das Gen WEITERGEBEN:
+            if father not in one_gene and father not in two_genes:
+                f_prob = PROBS["mutation"]
+            elif father in one_gene:
+                f_prob = 0.5
+            else:
+                f_prob = 1 - PROBS["mutation"]
+
+            if mother not in one_gene and mother not in two_genes:
+                m_prob = PROBS["mutation"]
+            elif mother in one_gene:
+                m_prob = 0.5
+            else:
+                m_prob = 1 - PROBS["mutation"]
+
+            # Jetzt prüfen wir, was das Kind laut Szenario haben soll:
+            if p in two_genes:
+                # Biologisch: Mutter gibt Gen UND Vater gibt Gen
+                gene_prob = m_prob * f_prob
+
+            elif p in one_gene:
+                # Biologisch: Weg A (Mutter gibt es, Vater nicht) ODER Weg B (Mutter nicht, Vater schon)
+                # Tipp für "gibt es nicht": (1 - m_prob) bzw. (1 - f_prob)
+                gene_prob = (m_prob * (1 - f_prob)) + ((1 - m_prob) * f_prob)
+
+            else:
+                # Biologisch: Das Kind hat 0 Gene. Mutter gibt kein Gen UND Vater gibt kein Gen
+                gene_prob = (1 - m_prob) * (1 - f_prob)
+
+        # Trait-Check (sauber mit if-elif-else ohne Überschreiben)
+        if p in have_trait:
+            if p in two_genes:
+                trait_prob = PROBS["trait"][2][True]
+            elif p in one_gene:
+                trait_prob = PROBS["trait"][1][True]
+            else:
+                trait_prob = PROBS["trait"][0][True]
+        else:
+            if p in two_genes:
+                trait_prob = PROBS["trait"][2][False]
+            elif p in one_gene:
+                trait_prob = PROBS["trait"][1][False]
+            else:
+                trait_prob = PROBS["trait"][0][False]
+
+        # Für jede Person aufmultiplizieren
+        joint_probability = joint_probability * gene_prob * trait_prob
+
+    # Erst ganz am Ende, wenn ALLE Personen durch sind, kommt das Gesamt-Ergebnis zurück
+    return joint_probability
 
 
 def update(probabilities, one_gene, two_genes, have_trait, p):
