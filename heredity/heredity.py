@@ -207,19 +207,20 @@ def normalize(probabilities):
     """
     for person in probabilities:
         p_trait = probabilities[person]["trait"][True]
-        p_notrait = probabilities[person]["trait"][False]
+        p_nottrait = probabilities[person]["trait"][False]
+        sum = p_trait + p_nottrait
+        if sum > 0:
+            probabilities[person]["trait"][True] = p_trait / sum
+            probabilities[person]["trait"][False] = p_nottrait / sum
 
-        if p_trait + p_notrait != 1:
-            realitivity = p_trait / p_notrait
-            i = 0
-            j = 0
-            stop = True
-            while True:
-                i += 0.1
-                j += 0.1
-                j = j * realitivity
-                if i + j = 1
-                    stop = False
+        p_gene1 = probabilities[person]["gene"][1]
+        p_gene2 = probabilities[person]["gene"][2]
+        p_gene0 = probabilities[person]["gene"][0]
+        sum = p_gene1 + p_gene2 + p_gene0
+        if sum > 0:
+            probabilities[person]["gene"][1] = p_gene1 / sum
+            probabilities[person]["gene"][2] = p_gene2 / sum
+            probabilities[person]["gene"][0] = p_gene0 / sum
 
 
 if __name__ == "__main__":
