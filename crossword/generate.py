@@ -188,8 +188,14 @@ class CrosswordCreator():
         
             neighbors = self.crossword.neighbors(a)
             for y in neighbors:
-                if self.crossword.overlaps[y,a] != None:
-                    return False
+                if y in assignment:
+                    overlap = self.crossword.overlaps[a,y]
+                    if overlap:
+                        i,j = overlap
+                        
+                        if assignment[a][i] != assignment[y][j]:
+                            return False
+                    
             
         return True
             
