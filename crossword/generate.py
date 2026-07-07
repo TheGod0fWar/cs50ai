@@ -210,7 +210,10 @@ class CrosswordCreator():
         The first value in the list, for example, should be the one
         that rules out the fewest values among the neighbors of `var`.
         """
-        raise NotImplementedError
+        variable = []
+        for v in self.domains[var]:
+            variable.append(v)
+        return variable
 
     def select_unassigned_variable(self, assignment):
         """
@@ -220,7 +223,13 @@ class CrosswordCreator():
         degree. If there is a tie, any of the tied variables are acceptable
         return values.
         """
-        raise NotImplementedError
+        
+        for v in self.crossword.variables:
+            if v not in assignment:
+                return v
+        return False
+        
+            
 
     def backtrack(self, assignment):
         """
