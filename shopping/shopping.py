@@ -32,34 +32,65 @@ def main():
 
 
 def load_data(filename):
-    """
-    Load shopping data from a CSV file `filename` and convert into a list of
-    evidence lists and a list of labels. Return a tuple (evidence, labels).
+    evidence = []
+    labels = []
 
-    evidence should be a list of lists, where each list contains the
-    following values, in order:
-        - Administrative, an integer
-        - Administrative_Duration, a floating point number
-        - Informational, an integer
-        - Informational_Duration, a floating point number
-        - ProductRelated, an integer
-        - ProductRelated_Duration, a floating point number
-        - BounceRates, a floating point number
-        - ExitRates, a floating point number
-        - PageValues, a floating point number
-        - SpecialDay, a floating point number
-        - Month, an index from 0 (January) to 11 (December)
-        - OperatingSystems, an integer
-        - Browser, an integer
-        - Region, an integer
-        - TrafficType, an integer
-        - VisitorType, an integer 0 (not returning) or 1 (returning)
-        - Weekend, an integer 0 (if false) or 1 (if true)
+    with open(filename, mode="r", encoding="utf-8") as file:
+        reader = csv.reader(file)
 
-    labels should be the corresponding list of labels, where each label
-    is 1 if Revenue is true, and 0 otherwise.
-    """
-    raise NotImplementedError
+        next(reader)
+
+        for row in reader:
+            row_evidence = []  # Hier sammeln wir die Werte für DIESEN Nutzer
+
+            month_filter = {
+                "Jan": 0,
+                "Feb": 1,
+                "Mar": 2,
+                "Apr": 3,
+                "May": 4,
+                "June": 5,
+                "Jul": 6,
+                "Aug": 7,
+                "Sep": 8,
+                "Oct": 9,
+                "Nov": 10,
+                "Dec": 11,
+            }
+
+            for index, element in enumerate(row):
+                if index == 17:
+                    if element == "TRUE":
+                        labels.append(1)
+                    else:
+                        labels.append(0)
+
+                else:
+                    # month filter
+                    if index == 10:
+                        row_evidence.append(month_filter[element])
+                    # int filter
+                    elif index in [0, 2, 4, 11, 12, 13, 14]:
+                        row_evidence.append(int(element))
+                    # visitor
+                    elif index == 15:
+                        if element == "Returning_Visitor":
+                            row_evidence.append(1)
+                        else:
+                            row_evidence.append(0)
+                    # weekend
+                    elif index == 16:
+                        if element == "FALSE":
+                            row_evidence.append(0)
+                        else:
+                            row_evidence.append(1)
+
+                    else:
+                        row_evidence.append(float(element))
+
+            evidence.append(row_evidence)
+
+    return (evidence, labels)
 
 
 def train_model(evidence, labels):
