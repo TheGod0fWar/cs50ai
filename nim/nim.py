@@ -77,8 +77,8 @@ class NimAI:
 
         The Q-learning dictionary maps `(state, action)`
         pairs to a Q-value (a number).
-         - `state` is a tuple of remaining piles, e.g. (1, 1, 4, 4)
-         - `action` is a tuple `(i, j)` for an action
+          - `state` is a tuple of remaining piles, e.g. (1, 1, 4, 4)
+          - `action` is a tuple `(i, j)` for an action
         """
         self.q = dict()
         self.alpha = alpha
@@ -99,29 +99,28 @@ class NimAI:
         Return the Q-value for the state `state` and the action `action`.
         If no Q-value exists yet in `self.q`, return 0.
         """
-        if state in self.q:
-            if action in self.q[state]:
-                return self.q[state][action]
-        else:
-            return 0
+        # Listen-Zustand in ein unveränderliches Tuple konvertieren
+        state_tuple = tuple(state)
+
+        if state_tuple in self.q:
+            if action in self.q[state_tuple]:
+                return self.q[state_tuple][action]
+        return 0
 
     def update_q_value(self, state, action, old_q, reward, future_rewards):
         """
         Update the Q-value for the state `state` and the action `action`
         given the previous Q-value `old_q`, a current reward `reward`,
-        and an estiamte of future rewards `future_rewards`.
-
-        Use the formula:
-
-        Q(s, a) <- old value estimate
-                   + alpha * (new value estimate - old value estimate)
-
-        where `old value estimate` is the previous Q-value,
-        `alpha` is the learning rate, and `new value estimate`
-        is the sum of the current reward and estimated future rewards.
+        and an estimate of future rewards `future_rewards`.
         """
+        # Auch hier: Tuple-Konvertierung vor dem Schreiben ins Dict!
+        state_tuple = tuple(state)
+
+        if state_tuple not in self.q:
+            self.q[state_tuple] = dict()
+
         q_value = old_q + self.alpha * ((reward + future_rewards) - old_q)
-        self.q[state][action] = q_value
+        self.q[state_tuple][action] = q_value
 
     def best_future_reward(self, state):
         """
@@ -133,17 +132,14 @@ class NimAI:
         Q-value in `self.q`. If there are no available actions in
         `state`, return 0.
         """
-        storage = []
         actions = Nim.available_actions(state)
-        if len(actions) == 0:
-            return 0
-        for action in actions:
-            if state in self.q:
-                if action in self.q[state]:
-                    num = self.q[state][action]
-                    storage.append(num)
 
-        return max(storage)
+        # Falls das Spiel vorbei ist, gibt es keine zukünftigen Belohnungen mehr
+        if not actions:
+            return 0
+
+        # Da get_q_value die Konvertierung übernimmt, ist das hier absolut sicher
+        return max(self.get_q_value(state, action) for action in actions)
 
     def choose_action(self, state, epsilon=True):
         """
@@ -160,7 +156,31 @@ class NimAI:
         If multiple actions have the same Q-value, any of those
         options is an acceptable return value.
         """
-        raise NotImplementedError
+        actions = list(Nim.available_actions(state))
+        if not actions:
+            return None
+
+        # Bestimme, ob wir explorieren (zufälliger Zug) oder exploitieren (bester Zug)
+        # Wir explorieren NUR, wenn epsilon True ist UND der Zufallswert unter self.epsilon liegt
+        explore = epsilon and (random.random() < self.epsilon)
+
+        if explore:
+            # Exploration: Wähle eine völlig zufällige Aktion
+            return random.choice(actions)
+        else:
+            # Exploitation: Wähle die Aktion mit dem besten Q-Wert
+            action_rewards = {
+                action: self.get_q_value(state, action) for action in actions
+            }
+            max_q = max(action_rewards.values())
+
+            # Finde alle Aktionen, die diesen maximalen Q-Wert teilen (verhindert Bevorzugung)
+            best_actions = [
+                action for action, q in action_rewards.items() if q == max_q
+            ]
+
+            # Wähle zufällig eine der besten Aktionen aus
+            return random.choice(best_actions)
 
 
 def train(n):
