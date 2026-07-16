@@ -19,3 +19,4 @@ for _ in range(50):
 
 print(f"i = {i}, j = {j}")
 # Ausgabe: i = 0.25, j = 0.75
+print(f"Summe = {summe}")
